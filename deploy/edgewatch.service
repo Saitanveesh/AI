@@ -1,0 +1,22 @@
+# Sample service. Review User, WorkingDirectory and interpreter path before enabling.
+# Do not deploy as root. Web API binds to localhost only.
+[Unit]
+Description=EdgeWatch passive observation dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/edgewatch
+Environment=EDGEWATCH_SOURCE=synthetic
+Environment=EDGEWATCH_DETECTOR=none
+ExecStart=/opt/edgewatch/.venv/bin/edgewatch serve
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target
