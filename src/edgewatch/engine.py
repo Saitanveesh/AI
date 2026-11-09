@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
-import numpy as np
 
 from .config import Settings
 from .inference import make_detector

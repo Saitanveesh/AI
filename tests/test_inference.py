@@ -1,7 +1,6 @@
 import numpy as np
 
 from edgewatch.inference import DisabledDetector, parse_hailo
-from edgewatch.models import Detection
 
 
 def test_normalized_hailo_layout_and_allowlist():
