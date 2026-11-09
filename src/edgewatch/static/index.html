@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+<title>EdgeWatch Observer</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,sans-serif;color:#dce6f3;background:#080f1b}
+*{box-sizing:border-box}body{margin:0}header{padding:18px 28px;border-bottom:1px solid #24334a;display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:19px;letter-spacing:.02em}h2{font-size:14px;color:#94a8bf;font-weight:600;margin:0 0 14px}
+small{color:#91a6c0}.label{background:#173249;color:#9ed5ef;border:1px solid #345c79;padding:6px 11px;border-radius:20px;font-size:11px}
+.layout{max-width:1440px;margin:auto;padding:24px;display:grid;grid-template-columns:minmax(0,2.2fr) minmax(280px,1fr);gap:16px}
+.panel{background:#111c2b;border:1px solid #293a4e;border-radius:12px;padding:18px;min-width:0}
+.feed{width:100%;aspect-ratio:4/3;object-fit:contain;background:#060a11;border:1px solid #2e435c;border-radius:8px}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.metric{border-radius:9px;background:#1a293b;padding:14px}.metric strong{display:block;font-size:24px;margin-top:6px}
+.metric span{font-size:11px;color:#9eb0c6}
+.value{color:#a1eac7}.warning{color:#ffd294}#events{height:340px;overflow:auto;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-word}
+.event{border-bottom:1px solid #223349;padding:8px 0;color:#abbfd3}
+footer{color:#879bb2;font-size:12px;padding:0 28px 24px;text-align:center}
+@media(max-width:820px){.layout{grid-template-columns:1fr;padding:14px}header{padding:16px}}
+</style>
+</head>
+<body>
+<header><div><h1>EDGEWATCH <small> / OBSERVER</small></h1><small>Passive image analytics · No actuator interface</small></div><span class="label" id="state">CONNECTING</span></header>
+<main class="layout">
+<section class="panel"><h2>LIVE CAMERA OBSERVATION</h2><img class="feed" alt="Passive live camera observation" src="/api/v1/stream.mjpeg">
+<p><small>Local-only stream. Input may be synthetic, replayed, or a physical camera. Detection boxes are observations, not target locks.</small></p></section>
+<section>
+<div class="panel"><h2>SYSTEM TELEMETRY</h2><div class="metrics">
+<div class="metric"><span>PROCESSED FPS</span><strong id="fps">—</strong></div>
+<div class="metric"><span>PIPELINE P95</span><strong id="latency">—</strong></div>
+<div class="metric"><span>FRAMES</span><strong id="frames">—</strong></div>
+<div class="metric"><span>OBSERVATIONS / FRAME</span><strong id="count">—</strong></div>
+</div><p><small>Source: <b id="source">—</b> · Inference: <b id="detector">—</b></small></p><p><small>Last frame: <span id="last">—</span></small></p></div>
+<div class="panel" style="margin-top:16px"><h2>IMAGE QUALITY & FRESHNESS</h2><p><small id="freshness">Awaiting camera frame</small></p><p><small id="quality">Awaiting quality sample</small></p></div>
+<div class="panel" style="margin-top:16px"><h2>EVENT AUDIT</h2><div id="events" aria-live="polite">Awaiting telemetry...</div></div>
+</section>
+</main>
+<footer>EdgeWatch 0.1 · Research platform · Passive observation only · No geolocation, autonomous aiming, weapons, or flight control</footer>
+<script>
+const ids={state:'state',fps:'fps',latency:'latency',frames:'frames',count:'count',source:'source',detector:'detector',last:'last'};
+const el=(name)=>document.getElementById(ids[name]||name);
+async function poll(){
+ try{
+  const [s,e]=await Promise.all([
+   fetch('/api/v1/status',{cache:'no-store'}),
+   fetch('/api/v1/events',{cache:'no-store'})
+  ]);
+  if(!s.ok||!e.ok)throw Error('API unavailable');
+  const d=await s.json();const events=await e.json();
+  el('state').textContent=d.state.toUpperCase();
+  el('fps').textContent=Number(d.processing_fps_10s).toFixed(1);
+  el('latency').textContent=Number(d.pipeline_latency_p95_ms).toFixed(1)+' ms';
+  el('frames').textContent=String(d.frames_processed);
+  el('count').textContent=String(d.detections_last_frame);
+  el('source').textContent=d.source;el('detector').textContent=d.inference;
+  el('last').textContent=d.last_frame_utc||'—';
+  el('freshness').textContent=d.frame_fresh
+    ? 'Current camera frames ('+Math.round(d.frame_age_ms)+' ms old)'
+    : 'STALE / UNAVAILABLE — live viewing is not verified';
+  const q=d.image_quality||{};
+  el('quality').textContent=q.available
+    ? 'Brightness '+q.brightness_mean_0_255+'/255 · Detail '+q.laplacian_variance+
+      ' · Flags: '+((q.warnings||[]).join(', ')||'none')
+    : 'Quality unavailable: '+((q.warnings||[]).join(', ')||'no sample');
+  const log=el('events');log.replaceChildren();
+  (events.events||[]).slice(-14).reverse().forEach(item=>{
+   const line=document.createElement('div');line.className='event';
+   line.textContent=item.at+'  '+item.kind+'  '+item.message;log.appendChild(line)
+  });
+ }catch(err){el('state').textContent='OFFLINE'}
+}
+poll();setInterval(poll,1500);
+</script>
+</body>
+</html>
