@@ -8,11 +8,11 @@ EdgeWatch is a software engineering research platform for supervised observation
 
 - Camera-source abstraction: deterministic synthetic frames, recorded video, or Raspberry Pi Picamera2.
 - Optional Hailo inference through the official Picamera2 Hailo wrapper and a compatible postprocessed HEF model.
-- Explicit COCO-class allowlist, confidence threshold, and bounded detections.
+- Explicit COCO-class allowlist, confidence threshold, bounded detections, and privacy-aware image-quality diagnostics.
 - Configurable privacy regions applied before inference, display, and optional snapshots.
 - One-producer camera pipeline with thread-safe, latest-frame MJPEG streaming for multiple local viewers.
 - Read-only local operator dashboard, health endpoints, frame capture, status, audit events and rolling latency/FPS metrics.
-- Fail-visible lifecycle state, bounded event memory, opt-in snapshot recording, and synthetic-first test configuration.
+- Fail-visible lifecycle state, camera-frame freshness checks, capped rotating audit logs, opt-in snapshot recording, and synthetic-first test configuration.
 - No model training required for the initial demonstration; no fabricated inference results in synthetic mode.
 - Unit/integration tests and GitHub Actions validation.
 
@@ -113,6 +113,16 @@ export EDGEWATCH_SNAPSHOT_INTERVAL=30
 ~~~
 
 Events append to runtime/events.jsonl; stored footage/snapshots should be managed according to local consent and retention policies.
+
+## Offline detection evaluation (no Pi required)
+
+The evaluation CLI scores image-space detections against independently annotated JSONL data. It reports per-class precision, recall, F1, AP and mAP at a fixed IoU, with an input SHA256 digest. This is an offline statistical tool, not a target tracker.
+
+~~~bash
+edgewatch evaluate --dataset examples/evaluation/sample.jsonl --iou 0.5 --confidence 0.5
+~~~
+
+See [offline evaluation guide](docs/EVALUATION.md). The example fixture was manually authored; it does not represent results from a trained model.
 
 ## Reproducible benchmarks and device checks
 

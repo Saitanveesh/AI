@@ -29,3 +29,7 @@ jobs:
         run: pytest
       - name: CLI configuration validation
         run: edgewatch check
+      - name: Offline benchmark smoke test
+        run: edgewatch benchmark --frames 15
+      - name: Offline annotation-evaluation smoke test
+        run: edgewatch evaluate --dataset examples/evaluation/sample.jsonl --iou 0.5

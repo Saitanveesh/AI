@@ -1,0 +1,3 @@
+{"image_id":"scene-a-001","truth":[{"label":"bicycle","bbox":[0.1,0.2,0.5,0.8]}],"predictions":[{"label":"bicycle","bbox":[0.11,0.2,0.5,0.79],"score":0.9}]}
+{"image_id":"scene-a-002","truth":[],"predictions":[]}
+{"image_id":"scene-a-003","truth":[{"label":"sports ball","bbox":[0.2,0.2,0.4,0.4]}],"predictions":[{"label":"sports ball","bbox":[0.2,0.2,0.4,0.4],"score":0.65}]}
