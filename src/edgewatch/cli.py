@@ -11,12 +11,27 @@ from .config import Settings
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="EdgeWatch passive edge-vision observation service")
-    parser.add_argument("command", choices=("serve", "check", "doctor", "benchmark"),
+    parser.add_argument("command", choices=("serve", "check", "doctor", "benchmark", "evaluate"),
                         nargs="?", default="serve")
     parser.add_argument("--port", type=int, default=8090)
     parser.add_argument("--frames", type=int, default=300,
                         help="Maximum offline benchmark frames (1..10000)")
+    parser.add_argument("--dataset", default="", help="Offline JSONL annotation file")
+    parser.add_argument("--iou", type=float, default=0.5)
+    parser.add_argument("--confidence", type=float, default=0.5)
     args = parser.parse_args()
+
+    if args.command == "evaluate":
+        if not args.dataset:
+            parser.error("Evaluation requires --dataset PATH")
+        from .evaluation import evaluate_file
+        try:
+            print(json.dumps(evaluate_file(args.dataset, args.iou, args.confidence),
+                             indent=2))
+        except (OSError, ValueError) as exc:
+            print(f"Evaluation failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+            raise SystemExit(1) from exc
+        return
 
     if args.command == "doctor":
         from .diagnostics import collect_diagnostics
