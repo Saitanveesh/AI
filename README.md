@@ -114,6 +114,15 @@ export EDGEWATCH_SNAPSHOT_INTERVAL=30
 
 Events append to runtime/events.jsonl; stored footage/snapshots should be managed according to local consent and retention policies.
 
+## Reproducible benchmarks and device checks
+
+~~~bash
+edgewatch doctor
+edgewatch benchmark --frames 300
+~~~
+
+For full reproducibility details see [benchmark methodology](docs/BENCHMARK.md). Neither command needs a gimbal or flight controller. The synthetic benchmark is not a Hailo performance claim.
+
 ## Validation
 
 ~~~bash
