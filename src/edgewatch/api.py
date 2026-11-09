@@ -42,9 +42,10 @@ def create_app(settings: Settings | None = None, engine: ObservationEngine | Non
 
     @app.get("/api/v1/health/ready")
     async def readiness():
-        state = runtime.status()["state"]
-        if state != "observing":
-            raise HTTPException(status_code=503, detail={"state": state})
+        state = runtime.status()
+        if state["state"] != "observing" or not state["frame_fresh"]:
+            raise HTTPException(status_code=503, detail={
+                "state": state["state"], "frame_fresh": state["frame_fresh"]})
         return {"ready": True}
 
     @app.get("/api/v1/status")
@@ -58,7 +59,7 @@ def create_app(settings: Settings | None = None, engine: ObservationEngine | Non
     @app.get("/api/v1/frame.jpg")
     async def frame():
         _, jpeg = runtime.latest_jpeg()
-        if jpeg is None:
+        if jpeg is None or not runtime.status()["frame_fresh"]:
             raise HTTPException(status_code=503, detail="No image available")
         return Response(jpeg, media_type="image/jpeg",
                         headers={"Cache-Control": "no-store"})
@@ -69,7 +70,7 @@ def create_app(settings: Settings | None = None, engine: ObservationEngine | Non
             last = -1
             while not await request.is_disconnected():
                 seq, jpeg = runtime.latest_jpeg()
-                if jpeg is not None and seq != last:
+                if jpeg is not None and seq != last and runtime.status()["frame_fresh"]:
                     last = seq
                     yield (b"--frame\r\nContent-Type: image/jpeg\r\n" +
                            b"Content-Length: " + str(len(jpeg)).encode() +

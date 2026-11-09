@@ -12,6 +12,7 @@ from .config import Settings
 from .inference import make_detector
 from .models import Health, utc_timestamp
 from .privacy import apply_masks, overlaps_privacy
+from .quality import assess_image_quality
 from .sources import make_source
 from .telemetry import Telemetry
 
@@ -31,6 +32,8 @@ class ObservationEngine:
         self._jpeg: bytes | None = None
         self._seq = 0
         self._last_frame_utc: str | None = None
+        self._last_frame_mono: float | None = None
+        self._latest_quality: dict = {"available": False, "warnings": ["no_frames"]}
         self._last_snapshot = 0.0
 
     def _transition(self, state: Health, reason: str = "") -> None:
@@ -65,7 +68,16 @@ class ObservationEngine:
 
     def status(self) -> dict:
         with self._lock:
+            frame_age_ms = (round((time.monotonic() - self._last_frame_mono) * 1000, 1)
+                            if self._last_frame_mono is not None else None)
+            fresh_limit_ms = max(2000.0, 4000.0 / self.settings.fps)
+            frame_fresh = (frame_age_ms is not None and frame_age_ms <= fresh_limit_ms
+                           and self._state == Health.OBSERVING)
             data = {
+                "frame_age_ms": frame_age_ms,
+                "frame_fresh": frame_fresh,
+                "freshness_limit_ms": round(fresh_limit_ms, 1),
+                "image_quality": dict(self._latest_quality),
                 "state": self._state.value,
                 "error": self._error,
                 "source": self.settings.source,
@@ -115,6 +127,10 @@ class ObservationEngine:
                 if raw.ndim != 3 or raw.shape[2] != 3:
                     raise ValueError("Image source returned unsupported frame")
                 frame = apply_masks(raw, self.settings.privacy_masks)
+                if self._seq % 5 == 0:
+                    quality = assess_image_quality(frame, self.settings.privacy_masks)
+                    with self._lock:
+                        self._latest_quality = quality
                 detections = detector.detect(frame)
                 detections = [d for d in detections if not overlaps_privacy(
                     d, self.settings.privacy_masks, frame.shape[1], frame.shape[0])]
@@ -136,6 +152,7 @@ class ObservationEngine:
                     self._jpeg = jpeg
                     self._seq += 1
                     self._last_frame_utc = utc_timestamp()
+                    self._last_frame_mono = now
                 self.telemetry.frame(latency_ms, len(detections))
                 try:
                     self._snapshot(jpeg, now)
