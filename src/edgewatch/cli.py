@@ -11,12 +11,14 @@ from .config import Settings
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="EdgeWatch passive edge-vision observation service")
-    parser.add_argument("command", choices=("serve", "check", "doctor", "benchmark", "evaluate"),
+    parser.add_argument("command", choices=("serve", "check", "doctor", "benchmark", "evaluate", "audit"),
                         nargs="?", default="serve")
     parser.add_argument("--port", type=int, default=8090)
     parser.add_argument("--frames", type=int, default=300,
                         help="Maximum offline benchmark frames (1..10000)")
     parser.add_argument("--dataset", default="", help="Offline JSONL annotation file")
+    parser.add_argument("--output", default="runtime/offline_observations.jsonl",
+                        help="New output path for a read-only observation audit")
     parser.add_argument("--iou", type=float, default=0.5)
     parser.add_argument("--confidence", type=float, default=0.5)
     args = parser.parse_args()
@@ -53,6 +55,16 @@ def main() -> None:
             "fps": settings.fps,
             "privacy_masks": len(settings.privacy_masks),
         }, indent=2))
+        return
+
+    if args.command == "audit":
+        from .audit import export_observations
+        try:
+            print(json.dumps(export_observations(settings, args.output,
+                                                  max_frames=args.frames), indent=2))
+        except (OSError, RuntimeError, ValueError) as exc:
+            print(f"Audit failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+            raise SystemExit(1) from exc
         return
 
     if args.command == "benchmark":

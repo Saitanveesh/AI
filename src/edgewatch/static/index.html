@@ -34,6 +34,7 @@ footer{color:#879bb2;font-size:12px;padding:0 28px 24px;text-align:center}
 <div class="metric"><span>FRAMES</span><strong id="frames">—</strong></div>
 <div class="metric"><span>OBSERVATIONS / FRAME</span><strong id="count">—</strong></div>
 </div><p><small>Source: <b id="source">—</b> · Inference: <b id="detector">—</b></small></p><p><small>Last frame: <span id="last">—</span></small></p></div>
+<div class="panel" style="margin-top:16px"><h2>IMAGE QUALITY & FRESHNESS</h2><p><small id="freshness">Awaiting camera frame</small></p><p><small id="quality">Awaiting quality sample</small></p></div>
 <div class="panel" style="margin-top:16px"><h2>EVENT AUDIT</h2><div id="events" aria-live="polite">Awaiting telemetry...</div></div>
 </section>
 </main>
@@ -56,6 +57,14 @@ async function poll(){
   el('count').textContent=String(d.detections_last_frame);
   el('source').textContent=d.source;el('detector').textContent=d.inference;
   el('last').textContent=d.last_frame_utc||'—';
+  el('freshness').textContent=d.frame_fresh
+    ? 'Current camera frames ('+Math.round(d.frame_age_ms)+' ms old)'
+    : 'STALE / UNAVAILABLE — live viewing is not verified';
+  const q=d.image_quality||{};
+  el('quality').textContent=q.available
+    ? 'Brightness '+q.brightness_mean_0_255+'/255 · Detail '+q.laplacian_variance+
+      ' · Flags: '+((q.warnings||[]).join(', ')||'none')
+    : 'Quality unavailable: '+((q.warnings||[]).join(', ')||'no sample');
   const log=el('events');log.replaceChildren();
   (events.events||[]).slice(-14).reverse().forEach(item=>{
    const line=document.createElement('div');line.className='event';

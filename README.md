@@ -114,6 +114,16 @@ export EDGEWATCH_SNAPSHOT_INTERVAL=30
 
 Events append to runtime/events.jsonl; stored footage/snapshots should be managed according to local consent and retention policies.
 
+## Offline frame-audit export
+
+Export anonymized image-space detection records and scalar quality indicators from a synthetic or recorded-video source. Ground truth is deliberately absent; independent annotations must be supplied before computing precision and recall.
+
+~~~bash
+edgewatch audit --frames 60 --output runtime/audit_run_001.jsonl
+~~~
+
+The command refuses to overwrite an existing audit, and it does not save raw footage. See [offline audit documentation](docs/AUDIT.md).
+
 ## Offline detection evaluation (no Pi required)
 
 The evaluation CLI scores image-space detections against independently annotated JSONL data. It reports per-class precision, recall, F1, AP and mAP at a fixed IoU, with an input SHA256 digest. This is an offline statistical tool, not a target tracker.
