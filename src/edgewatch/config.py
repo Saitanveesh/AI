@@ -33,6 +33,7 @@ class Settings:
     session_dir: str = "runtime/sessions"
     save_snapshots: bool = False
     snapshot_every_s: int = 30
+    snapshot_max_files: int = 200
 
     def __post_init__(self) -> None:
         if self.source not in ("synthetic", "video", "picamera2"):
@@ -55,6 +56,8 @@ class Settings:
             raise ValueError("jpeg_quality must be 40..95")
         if self.snapshot_every_s < 1:
             raise ValueError("snapshot_every_s must be positive")
+        if not (1 <= self.snapshot_max_files <= 10000):
+            raise ValueError("snapshot_max_files must be 1..10000")
         for region in self.privacy_masks:
             if not (0 <= region[0] < region[2] <= 1 and
                     0 <= region[1] < region[3] <= 1):
@@ -96,6 +99,7 @@ class Settings:
             session_dir=env.get("EDGEWATCH_SESSION_DIR", "runtime/sessions"),
             save_snapshots=_bool(env.get("EDGEWATCH_SAVE_SNAPSHOTS", "false")),
             snapshot_every_s=int(env.get("EDGEWATCH_SNAPSHOT_INTERVAL", "30")),
+            snapshot_max_files=int(env.get("EDGEWATCH_SNAPSHOT_MAX_FILES", "200")),
         )
 
     def validate_inputs(self) -> None:

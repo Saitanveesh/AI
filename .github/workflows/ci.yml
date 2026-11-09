@@ -33,3 +33,7 @@ jobs:
         run: edgewatch benchmark --frames 15
       - name: Offline annotation-evaluation smoke test
         run: edgewatch evaluate --dataset examples/evaluation/sample.jsonl --iou 0.5
+      - name: Atomic audit CLI smoke test
+        run: |
+          edgewatch audit --frames 15 --output runtime/ci_audit.jsonl
+          test "$(wc -l < runtime/ci_audit.jsonl)" -eq 15

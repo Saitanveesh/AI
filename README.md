@@ -110,6 +110,7 @@ Snapshots are off by default. To opt in to periodic snapshots (JPEG, not continu
 ~~~bash
 export EDGEWATCH_SAVE_SNAPSHOTS=true
 export EDGEWATCH_SNAPSHOT_INTERVAL=30
+export EDGEWATCH_SNAPSHOT_MAX_FILES=200
 ~~~
 
 Events append to runtime/events.jsonl; stored footage/snapshots should be managed according to local consent and retention policies.

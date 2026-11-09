@@ -86,6 +86,7 @@ class ObservationEngine:
                 "last_frame_utc": self._last_frame_utc,
                 "privacy_masks": len(self.settings.privacy_masks),
                 "recording_snapshots": self.settings.save_snapshots,
+                "snapshot_retention_files": self.settings.snapshot_max_files,
                 "remote_actuation": False,
                 "aircraft_control": False,
                 "weapon_interface": False,
@@ -106,6 +107,9 @@ class ObservationEngine:
         folder.mkdir(parents=True, exist_ok=True)
         name = datetime.now(timezone.utc).strftime("snapshot_%Y%m%dT%H%M%S_%fZ.jpg")
         (folder / name).write_bytes(jpeg)
+        entries = sorted(folder.glob("snapshot_*.jpg"), key=lambda path: path.name)
+        for obsolete in entries[:-cfg.snapshot_max_files]:
+            obsolete.unlink()
 
     def _run(self) -> None:
         source = None
